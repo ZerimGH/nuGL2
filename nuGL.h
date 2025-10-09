@@ -30,17 +30,17 @@ typedef struct {
   char *name;
   GLint location;
   GLenum type;
-} Uniform;
+} nu_Uniform;
 
 typedef struct {
   size_t num_uniforms;
-  Uniform *uniforms;
+  nu_Uniform *uniforms;
   GLuint shader_program;
 } nu_Program;
 
 typedef struct {
-  GLuint texture;
-  GLenum texture_type;
+  GLuint id;
+  GLenum type;
 } nu_Texture;
 
 typedef struct {
@@ -56,12 +56,14 @@ typedef struct {
 } nu_Mesh;
 
 // Function prototypes
+
 // -- WINDOWS --
 // Initialise GLFW and create a window with a given width, height, and title. If fullscreen is
 // true, the window will be fullscreen
 nu_Window *nu_create_window(size_t width, size_t height, const char *title, bool fullscreen);
 // Destroy a window and terminate GLFW
 void nu_destroy_window(nu_Window **window);
+
 // -- SHADER PROGRAMS --
 // Create a shader program from a number of shaders, and a list of const char
 // *'s of their source file locations
@@ -74,6 +76,8 @@ void nu_use_program(nu_Program *program);
 void nu_register_uniform(nu_Program *program, const char *name, GLenum type);
 // Set a registered uniform from a pointer to the data
 void nu_set_uniform(nu_Program *program, const char *uniform_name, void *data);
+
+// -- MESHES --
 // Create a mesh with a defined VAO and VBO layout. For example, for this
 // vertex struct:
 // typedef struct {
@@ -87,7 +91,6 @@ void nu_set_uniform(nu_Program *program, const char *uniform_name, void *data);
 //                                        2, and tex_index is a single int)
 // component_types should be {GL_FLOAT, GL_FLOAT, GL_INT} (float[], float[],
 //                                                        int)
-// -- MESHES --
 nu_Mesh *nu_create_mesh(size_t num_components, size_t *component_sizes, size_t *component_counts, GLenum *component_types); 
 // Frees all resources of a mesh, deletes OpenGL buffers
 void nu_destroy_mesh(nu_Mesh **mesh);
@@ -105,11 +108,24 @@ void nu_render_mesh(nu_Mesh *mesh);
 // Sets the rendering mode used when drawing the meshes VAO and VBO
 // Default mode: GL_TRIANGLES
 void nu_mesh_set_render_mode(nu_Mesh *mesh, GLenum render_mode);
+
+// -- TEXTURES --
+// Load a texture using its file location
+nu_Texture *nu_load_texture(const char *texture_loc);
+// Load a 2d texture array using a number of textures, and a list of file
+// locations
+nu_Texture *nu_load_texture_arr(size_t num_textures, ...);
+// Destroys all of a texture's resources
+void nu_destroy_texture(nu_Texture **texture);
+// Binds a texture to a specific texture slot
+void nu_bind_texture(nu_Texture *texture, size_t slot);
+
 // -- RENDERING --
 // Clears the screen
 void nu_start_frame(nu_Window *window);
 // Swaps buffers, polls events
 void nu_end_frame(nu_Window *window);
+
 // -- INPUT --
 // Updates the last input variables to be the current, should be run at the end
 // of every frame
@@ -134,6 +150,7 @@ double nu_get_delta_mouse_y(nu_Window *window);
 void nu_print_window(nu_Window *window);
 void nu_print_program(nu_Program *program);
 void nu_print_mesh(nu_Mesh *mesh);
+void nu_print_texture(nu_Texture *texture);
 #endif
 
 #endif

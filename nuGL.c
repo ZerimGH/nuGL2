@@ -1,5 +1,8 @@
 #include "nuGL.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "external/stb/stb_image.h"
+
 // GLFW callbacks
 void framebuffer_size_callback(GLFWwindow *glfw_window, int width, int height) {
   if(!glfw_window) return;
@@ -291,24 +294,24 @@ void nu_register_uniform(nu_Program *program, const char *name, GLenum type) {
   }
   if(program->num_uniforms == 0 || !program->uniforms) {
     program->num_uniforms = 1;
-    program->uniforms = calloc(program->num_uniforms, sizeof(Uniform)); 
+    program->uniforms = calloc(program->num_uniforms, sizeof(nu_Uniform)); 
     if(!program->uniforms) {
       fprintf(stderr, "(nu_register_uniform): Couldn't register uniform \"%s\", calloc failed.\n", name);
       return;
     }
-    program->uniforms[0] = (Uniform) {
+    program->uniforms[0] = (nu_Uniform) {
       .name = strdup(name),
       .location = loc,
       .type = type
     };
   } else {
-    Uniform *new = realloc(program->uniforms, sizeof(Uniform) * (program->num_uniforms + 1));
+    nu_Uniform *new = realloc(program->uniforms, sizeof(nu_Uniform) * (program->num_uniforms + 1));
     if(!new) {
       fprintf(stderr, "(nu_register_uniform): Couldn't register uniform \"%s\", realloc failed.\n", name);
       return;
     }
     program->uniforms = new;
-    program->uniforms[program->num_uniforms++] = (Uniform) {
+    program->uniforms[program->num_uniforms++] = (nu_Uniform) {
       .name = strdup(name),
       .location = loc,
       .type = type
@@ -316,7 +319,7 @@ void nu_register_uniform(nu_Program *program, const char *name, GLenum type) {
   }
 }
 
-static Uniform *nu_get_uniform(nu_Program *program, const char *uniform_name) {
+static nu_Uniform *nu_get_uniform(nu_Program *program, const char *uniform_name) {
   if(!program || !uniform_name || !program->uniforms || program->num_uniforms == 0) return NULL;
   for(size_t i = 0; i < program->num_uniforms; i++) {
     if(program->uniforms[i].name) {
@@ -330,7 +333,7 @@ static Uniform *nu_get_uniform(nu_Program *program, const char *uniform_name) {
 
 void nu_set_uniform(nu_Program *program, const char *uniform_name, void *data) {
   if(!program || !uniform_name || !data) return;
-  Uniform *uniform = nu_get_uniform(program, uniform_name);
+  nu_Uniform *uniform = nu_get_uniform(program, uniform_name);
   if(!uniform) {
     fprintf(stderr, "(nu_set_uniform): Couldn't set uniform \"%s\", uniform not registered in shader program.\n", uniform_name);
     return;
@@ -479,6 +482,7 @@ void nu_free_mesh(nu_Mesh *mesh) {
 }
 
 static void nu_bind_mesh(nu_Mesh *mesh) {
+  if(!mesh) return;
   glBindVertexArray(mesh->VAO);
   glBindBuffer(GL_ARRAY_BUFFER, mesh->VBO);
 }
@@ -536,6 +540,126 @@ void nu_end_frame(nu_Window *window) {
   glfwPollEvents();
 }
 
+// Texture loading
+nu_Texture *nu_load_texture(const char *file_loc) {
+  if(!file_loc) return NULL;
+  // Load the image
+  int image_width, image_height, comp;
+  stbi_set_flip_vertically_on_load(1);
+  unsigned char *image = stbi_load(file_loc, &image_width, &image_height, &comp, STBI_rgb_alpha);
+
+  if (image == NULL) {
+    fprintf(stderr, "(nu_load_texture): Error loading texture \"%s\", stbi_load returned NULL.\n", file_loc);
+    return NULL;
+  }
+
+  // Create and bind the texture
+  GLuint id;
+  glGenTextures(1, &id);
+  glBindTexture(GL_TEXTURE_2D, id);
+
+  // Set parameters
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  // Upload the loaded image to the texture
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+
+  // Free image
+  stbi_image_free(image);
+
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  // Allocate and set nu_Texture*
+  nu_Texture *result = calloc(1, sizeof(nu_Texture));
+  if(!result) {
+    fprintf(stderr, "(nu_load_texture): Error loading texture \"%s\", calloc failed.\n", file_loc);
+    glDeleteTextures(1, &id);
+    return NULL;
+  }
+  result->id = id;
+  result->type = GL_TEXTURE_2D;
+  return result;
+}
+
+nu_Texture *nu_load_texture_array(size_t num_textures, ...) {
+  if (num_textures == 0) return NULL;
+
+  va_list args;
+  va_start(args, num_textures);
+
+  stbi_set_flip_vertically_on_load(1);
+
+  char *first_path = va_arg(args, char *);
+  int width, height, comp;
+  unsigned char *first_image = stbi_load(first_path, &width, &height, &comp, STBI_rgb_alpha);
+  if (!first_image) {
+    fprintf(stderr, "(nu_load_texture_array): Failed to load first image %s\n", first_path);
+    va_end(args);
+    return NULL;
+  }
+
+  GLuint id;
+  glGenTextures(1, &id);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, id);
+
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, width, height, (GLsizei)num_textures, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, first_image);
+
+  stbi_image_free(first_image);
+
+  for (size_t i = 1; i < num_textures; i++) {
+    char *path = va_arg(args, char *);
+
+    int w, h, c;
+    unsigned char *image = stbi_load(path, &w, &h, &c, STBI_rgb_alpha);
+    if (!image) {
+      fprintf(stderr, "(nu_load_texture_array): Failed to load image %s\n", path);
+      glDeleteTextures(1, &id);
+      va_end(args);
+      return NULL;
+    }
+
+    if (w != width || h != height) {
+      fprintf(stderr, "(nu_load_texture_array): Image %s does not match size %dx%d, skipping.\n", path, width, height);
+      stbi_image_free(image);
+      continue;
+    }
+    
+    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, (GLint)i, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, image);
+    stbi_image_free(image);
+  }
+  va_end(args);
+
+  nu_Texture *result = calloc(1, sizeof(nu_Texture));
+  if(!result) {
+    fprintf(stderr, "(nu_load_texture_array): Couldn't load texture array, calloc failed.\n");
+    glDeleteTextures(1, &id);
+    return NULL;
+  }
+  result->id = id;
+  result->type = GL_TEXTURE_2D_ARRAY;
+  return result;
+}
+
+void nu_bind_texture(nu_Texture *texture, size_t slot){
+  if(!texture) return;
+  glActiveTexture(GL_TEXTURE0 + slot);
+  glBindTexture(texture->type, texture->id);
+}
+
+void nu_destroy_texture(nu_Texture **texture) {
+  if(!texture || !(*texture)) return;
+  if((*texture)->id) {
+    glDeleteTextures(1, &((*texture)->id));
+  }
+  free(*texture);
+  *texture = NULL;
+}
+
 // Input functions
 bool nu_get_key_state(nu_Window *window, int keycode) {
   if(!window) return false;
@@ -575,69 +699,90 @@ double nu_get_delta_mouse_y(nu_Window *window) {
   return nu_get_mouse_y(window) - nu_get_last_mouse_y(window);
 }
 
-// DEBUGGING PRINTS
+static const char *nu_gl_enum_to_str(GLenum e) {
+  switch (e) {
+    case GL_FLOAT: return "GL_FLOAT";
+    case GL_FLOAT_VEC2: return "GL_FLOAT_VEC2";
+    case GL_FLOAT_VEC3: return "GL_FLOAT_VEC3";
+    case GL_FLOAT_VEC4: return "GL_FLOAT_VEC4";
+    case GL_INT: return "GL_INT";
+    case GL_SAMPLER_2D: return "GL_SAMPLER_2D";
+    case GL_SAMPLER_2D_ARRAY: return "GL_SAMPLER_2D_ARRAY";
+    case GL_TEXTURE_2D: return "GL_TEXTURE_2D";
+    case GL_TEXTURE_2D_ARRAY: return "GL_TEXTURE_2D_ARRAY";
+    case GL_TRIANGLES: return "GL_TRIANGLES";
+    case GL_LINES: return "GL_LINES";
+    default: return "UNKNOWN GLENUM";
+  }
+}
+
+// DEBUG PRINTS
+static void indent(size_t n) {
+  for (size_t i = 0; i < n; ++i) putchar(' ');
+}
+
 void nu_print_window(nu_Window *window) {
-  if(!window) {
-    printf("Window: (null)\n");
-    return;
-  } 
+  if (!window) return (void)printf("Window: (null)\n");
   printf("Window: %p {\n", window);
-  printf("  glfw_window: %p\n", window->glfw_window);
-  printf("  width: %zu\n", window->width);
-  printf("  height: %zu\n", window->height);
+  indent(2); printf("glfw_window: %p\n", window->glfw_window);
+  indent(2); printf("width: %zu\n", window->width);
+  indent(2); printf("height: %zu\n", window->height);
+  indent(2); printf("keys: %p\n", window->keys);
+  indent(2); printf("last_keys: %p\n", window->last_keys);
+  indent(2); printf("mouse_x: %.2f\n", window->mouse_x);
+  indent(2); printf("mouse_y: %.2f\n", window->mouse_y);
+  indent(2); printf("last_mouse_x: %.2f\n", window->last_mouse_x);
+  indent(2); printf("last_mouse_y: %.2f\n", window->last_mouse_y);
+  indent(2); printf("mouse_left: %d\n", window->mouse_left);
+  indent(2); printf("mouse_right: %d\n", window->mouse_right);
+  indent(2); printf("last_mouse_left: %d\n", window->last_mouse_left);
+  indent(2); printf("last_mouse_right: %d\n", window->last_mouse_right);
   printf("}\n");
 }
 
-static void nu_print_uniform(Uniform *uniform) {
-  if(!uniform) printf("  Uniform: (null)\n");
-  printf("  Uniform: %p{\n", uniform);
-  printf("    name: %p, %s\n", uniform->name, uniform->name);
-  printf("    location: %d\n", uniform->location);
-  printf("    type: %d\n", uniform->type);
-  printf("  }\n");
+static void nu_print_uniform(nu_Uniform *uniform, size_t indent_level) {
+  if (!uniform) return (void)printf("Uniform: (null)\n");
+  indent(indent_level); printf("Uniform: %p {\n", uniform);
+  indent(indent_level + 2); printf("name: %p, %s\n", uniform->name, uniform->name);
+  indent(indent_level + 2); printf("location: %d\n", uniform->location);
+  indent(indent_level + 2); printf("type: %s (%d)\n", nu_gl_enum_to_str(uniform->type), uniform->type);
+  indent(indent_level); printf("}\n");
 }
 
 void nu_print_program(nu_Program *program) {
-  if(!program) {
-    printf("Program: (null)\n");
-    return;
-  }
-
+  if (!program) return (void)printf("Program: (null)\n");
   printf("Program: %p {\n", program);
-  printf("  shader_program: %u\n", program->shader_program);
-  if(program->uniforms) {
-    for(size_t i = 0; i < program->num_uniforms; i++) {
-      nu_print_uniform(&program->uniforms[i]);
+  indent(2); printf("shader_program: %u\n", program->shader_program);
+  indent(2); printf("num_uniforms: %zu\n", program->num_uniforms);
+  indent(2); printf("uniforms: {\n");
+  if (program->uniforms) {
+    for (size_t i = 0; i < program->num_uniforms; ++i) {
+      nu_print_uniform(&program->uniforms[i], 4);
     }
   }
+  indent(2); printf("}\n");
   printf("}\n");
 }
 
 void nu_print_mesh(nu_Mesh *mesh) {
-  if(!mesh) {
-    printf("Mesh: (null)\n");
-    return;
-  }
-
+  if (!mesh) return (void)printf("Mesh: (null)\n");
   printf("Mesh: %p {\n", mesh);
-  printf("  builder_data: %p\n", mesh->builder_data);
-  printf("    {");
-  if(mesh->builder_added != 0 && mesh->builder_data && mesh->builder_alloced) {
-    for(size_t i = 0; i < mesh->builder_alloced; i++) {
-      uint8_t byte_val = mesh->builder_data[i];
-      char *postfix = "";
-      if(i == mesh->builder_added - 1) postfix = " | ";
-      else if(i < mesh->builder_alloced - 1) postfix = ", ";
-      printf("%02X%s", byte_val, postfix);
-    }
-  }
+  indent(2); printf("builder_data: %p\n", mesh->builder_data);
+  indent(2); printf("builder_alloced: %zu\n", mesh->builder_alloced);
+  indent(2); printf("builder_added: %zu\n", mesh->builder_added);
+  indent(2); printf("stride: %zu\n", mesh->stride);
+  indent(2); printf("last_send_size: %zu\n", mesh->last_send_size);
+  indent(2); printf("VAO: %u\n", mesh->VAO);
+  indent(2); printf("VBO: %u\n", mesh->VBO);
+  indent(2); printf("render_mode: %s (%u)\n", nu_gl_enum_to_str(mesh->render_mode), mesh->render_mode);
   printf("}\n");
-  printf("  builder_alloced: %zu\n", mesh->builder_alloced);
-  printf("  builder_added: %zu\n", mesh->builder_added);
-  printf("  stride: %zu\n", mesh->stride);
-  printf("  last_send_size: %zu\n", mesh->last_send_size);
-  printf("  VAO: %u\n", mesh->VAO);
-  printf("  VBO: %u\n", mesh->VBO);
+}
+
+void nu_print_texture(nu_Texture *texture) {
+  if (!texture) return (void)printf("Texture: (null)\n");
+  printf("Texture: %p {\n", texture);
+  indent(2); printf("id: %u\n", texture->id);
+  indent(2); printf("type: %s (%u)\n", nu_gl_enum_to_str(texture->type), texture->type);
   printf("}\n");
 }
 
