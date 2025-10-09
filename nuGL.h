@@ -114,7 +114,7 @@ void nu_mesh_set_render_mode(nu_Mesh *mesh, GLenum render_mode);
 nu_Texture *nu_load_texture(const char *texture_loc);
 // Load a 2d texture array using a number of textures, and a list of file
 // locations
-nu_Texture *nu_load_texture_arr(size_t num_textures, ...);
+nu_Texture *nu_load_texture_array(size_t num_textures, ...);
 // Destroys all of a texture's resources
 void nu_destroy_texture(nu_Texture **texture);
 // Binds a texture to a specific texture slot
