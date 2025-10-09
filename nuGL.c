@@ -531,7 +531,7 @@ void nu_start_frame(nu_Window *window) {
   if(!window || !window->glfw_window) return;
   // Clear screen
   glClearColor(0, 0, 0, 1);
-  glClear(GL_COLOR_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void nu_end_frame(nu_Window *window) {
