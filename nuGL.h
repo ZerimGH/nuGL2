@@ -147,10 +147,10 @@ double nu_get_delta_mouse_y(nu_Window *window);
 
 #ifdef NUGL_DEBUG
 // Debugging prints
-void nu_print_window(nu_Window *window);
-void nu_print_program(nu_Program *program);
-void nu_print_mesh(nu_Mesh *mesh);
-void nu_print_texture(nu_Texture *texture);
+void nu_print_window(nu_Window *window, size_t indent_level);
+void nu_print_program(nu_Program *program, size_t indent_level);
+void nu_print_mesh(nu_Mesh *mesh, size_t indent_level);
+void nu_print_texture(nu_Texture *texture, size_t indent_level);
 #endif
 
 #endif

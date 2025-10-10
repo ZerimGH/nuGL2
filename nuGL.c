@@ -723,68 +723,88 @@ static void indent(size_t n) {
   for (size_t i = 0; i < n; ++i) putchar(' ');
 }
 
-void nu_print_window(nu_Window *window) {
-  if (!window) return (void)printf("Window: (null)\n");
-  printf("Window: %p {\n", window);
-  indent(2); printf("glfw_window: %p\n", window->glfw_window);
-  indent(2); printf("width: %zu\n", window->width);
-  indent(2); printf("height: %zu\n", window->height);
-  indent(2); printf("keys: %p\n", window->keys);
-  indent(2); printf("last_keys: %p\n", window->last_keys);
-  indent(2); printf("mouse_x: %.2f\n", window->mouse_x);
-  indent(2); printf("mouse_y: %.2f\n", window->mouse_y);
-  indent(2); printf("last_mouse_x: %.2f\n", window->last_mouse_x);
-  indent(2); printf("last_mouse_y: %.2f\n", window->last_mouse_y);
-  indent(2); printf("mouse_left: %d\n", window->mouse_left);
-  indent(2); printf("mouse_right: %d\n", window->mouse_right);
-  indent(2); printf("last_mouse_left: %d\n", window->last_mouse_left);
-  indent(2); printf("last_mouse_right: %d\n", window->last_mouse_right);
-  printf("}\n");
-}
-
-static void nu_print_uniform(nu_Uniform *uniform, size_t indent_level) {
-  if (!uniform) return (void)printf("Uniform: (null)\n");
-  indent(indent_level); printf("Uniform: %p {\n", uniform);
-  indent(indent_level + 2); printf("name: %p, %s\n", uniform->name, uniform->name);
-  indent(indent_level + 2); printf("location: %d\n", uniform->location);
-  indent(indent_level + 2); printf("type: %s (%d)\n", nu_gl_enum_to_str(uniform->type), uniform->type);
+void nu_print_window(nu_Window *window, size_t indent_level) {
+  if (!window) {
+    indent(indent_level);
+    printf("Window: (null)\n");
+    return;
+  }
+  indent(indent_level); printf("Window: %p {\n", window);
+  indent(indent_level + 2); printf("glfw_window: %p\n", window->glfw_window);
+  indent(indent_level + 2); printf("width: %zu\n", window->width);
+  indent(indent_level + 2); printf("height: %zu\n", window->height);
+  indent(indent_level + 2); printf("keys: %p\n", window->keys);
+  indent(indent_level + 2); printf("last_keys: %p\n", window->last_keys);
+  indent(indent_level + 2); printf("mouse_x: %.2f\n", window->mouse_x);
+  indent(indent_level + 2); printf("mouse_y: %.2f\n", window->mouse_y);
+  indent(indent_level + 2); printf("last_mouse_x: %.2f\n", window->last_mouse_x);
+  indent(indent_level + 2); printf("last_mouse_y: %.2f\n", window->last_mouse_y);
+  indent(indent_level + 2); printf("mouse_left: %d\n", window->mouse_left);
+  indent(indent_level + 2); printf("mouse_right: %d\n", window->mouse_right);
+  indent(indent_level + 2); printf("last_mouse_left: %d\n", window->last_mouse_left);
+  indent(indent_level + 2); printf("last_mouse_right: %d\n", window->last_mouse_right);
   indent(indent_level); printf("}\n");
 }
 
-void nu_print_program(nu_Program *program) {
-  if (!program) return (void)printf("Program: (null)\n");
-  printf("Program: %p {\n", program);
-  indent(2); printf("shader_program: %u\n", program->shader_program);
-  indent(2); printf("num_uniforms: %zu\n", program->num_uniforms);
-  indent(2); printf("uniforms: {\n");
+static void nu_print_uniform(nu_Uniform *uniform, size_t indent_level) {
+  if (!uniform) {
+    indent(indent_level);
+    printf("Uniform: (null)\n");
+    return;
+  }
+  indent(indent_level); printf("Uniform: %p {\n", uniform);
+  indent(indent_level+ 2); printf("name: %p, %s\n", uniform->name, uniform->name);
+  indent(indent_level+ 2); printf("location: %d\n", uniform->location);
+  indent(indent_level+ 2); printf("type: %s (%d)\n", nu_gl_enum_to_str(uniform->type), uniform->type);
+  indent(indent_level); printf("}\n");
+}
+
+void nu_print_program(nu_Program *program, size_t indent_level) {
+  if (!program) {
+    indent(indent_level);
+    printf("Program: (null)\n");
+    return;
+  }
+  indent(indent_level); printf("Program: %p {\n", program);
+  indent(indent_level + 2); printf("shader_program: %u\n", program->shader_program);
+  indent(indent_level + 2); printf("num_uniforms: %zu\n", program->num_uniforms);
+  indent(indent_level + 2); printf("uniforms: {\n");
   if (program->uniforms) {
     for (size_t i = 0; i < program->num_uniforms; ++i) {
-      nu_print_uniform(&program->uniforms[i], 4);
+      nu_print_uniform(&program->uniforms[i], indent_level + 4);
     }
   }
-  indent(2); printf("}\n");
-  printf("}\n");
+  indent(indent_level + 2); printf("}\n");
+  indent(indent_level); printf("}\n");
 }
 
-void nu_print_mesh(nu_Mesh *mesh) {
-  if (!mesh) return (void)printf("Mesh: (null)\n");
-  printf("Mesh: %p {\n", mesh);
-  indent(2); printf("builder_data: %p\n", mesh->builder_data);
-  indent(2); printf("builder_alloced: %zu\n", mesh->builder_alloced);
-  indent(2); printf("builder_added: %zu\n", mesh->builder_added);
-  indent(2); printf("stride: %zu\n", mesh->stride);
-  indent(2); printf("last_send_size: %zu (%zu vertices)\n", mesh->last_send_size, mesh->last_send_size / mesh->stride);
-  indent(2); printf("VAO: %u\n", mesh->VAO);
-  indent(2); printf("VBO: %u\n", mesh->VBO);
-  indent(2); printf("render_mode: %s (%u)\n", nu_gl_enum_to_str(mesh->render_mode), mesh->render_mode);
-  printf("}\n");
+void nu_print_mesh(nu_Mesh *mesh, size_t indent_level) {
+  if (!mesh) {
+    indent(indent_level);
+    printf("Mesh: (null)\n");
+    return;
+  }
+  indent(indent_level); printf("Mesh: %p {\n", mesh);
+  indent(indent_level + 2); printf("builder_data: %p\n", mesh->builder_data);
+  indent(indent_level + 2); printf("builder_alloced: %zu\n", mesh->builder_alloced);
+  indent(indent_level + 2); printf("builder_added: %zu\n", mesh->builder_added);
+  indent(indent_level + 2); printf("stride: %zu\n", mesh->stride);
+  indent(indent_level + 2); printf("last_send_size: %zu (%zu vertices)\n", mesh->last_send_size, mesh->last_send_size / mesh->stride);
+  indent(indent_level + 2); printf("VAO: %u\n", mesh->VAO);
+  indent(indent_level + 2); printf("VBO: %u\n", mesh->VBO);
+  indent(indent_level + 2); printf("render_mode: %s (%u)\n", nu_gl_enum_to_str(mesh->render_mode), mesh->render_mode);
+  indent(indent_level); printf("}\n");
 }
 
-void nu_print_texture(nu_Texture *texture) {
-  if (!texture) return (void)printf("Texture: (null)\n");
-  printf("Texture: %p {\n", texture);
-  indent(2); printf("id: %u\n", texture->id);
-  indent(2); printf("type: %s (%u)\n", nu_gl_enum_to_str(texture->type), texture->type);
-  printf("}\n");
+void nu_print_texture(nu_Texture *texture, size_t indent_level) {
+  if (!texture) {
+    indent(indent_level);
+    printf("Texture: (null)\n");
+    return;
+  }
+  indent(indent_level); printf("Texture: %p {\n", texture);
+  indent(indent_level + 2); printf("id: %u\n", texture->id);
+  indent(indent_level + 2); printf("type: %s (%u)\n", nu_gl_enum_to_str(texture->type), texture->type);
+  indent(indent_level); printf("}\n");
 }
 
