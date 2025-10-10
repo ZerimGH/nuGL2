@@ -771,7 +771,7 @@ void nu_print_mesh(nu_Mesh *mesh) {
   indent(2); printf("builder_alloced: %zu\n", mesh->builder_alloced);
   indent(2); printf("builder_added: %zu\n", mesh->builder_added);
   indent(2); printf("stride: %zu\n", mesh->stride);
-  indent(2); printf("last_send_size: %zu\n", mesh->last_send_size);
+  indent(2); printf("last_send_size: %zu (%zu vertices)\n", mesh->last_send_size, mesh->last_send_size / mesh->stride);
   indent(2); printf("VAO: %u\n", mesh->VAO);
   indent(2); printf("VBO: %u\n", mesh->VBO);
   indent(2); printf("render_mode: %s (%u)\n", nu_gl_enum_to_str(mesh->render_mode), mesh->render_mode);
