@@ -706,6 +706,8 @@ static const char *nu_gl_enum_to_str(GLenum e) {
     case GL_FLOAT_VEC3: return "GL_FLOAT_VEC3";
     case GL_FLOAT_VEC4: return "GL_FLOAT_VEC4";
     case GL_INT: return "GL_INT";
+    case GL_FLOAT_MAT3: return "GL_FLOAT_MAT3";
+    case GL_FLOAT_MAT4: return "GL_FLOAT_MAT4";
     case GL_SAMPLER_2D: return "GL_SAMPLER_2D";
     case GL_SAMPLER_2D_ARRAY: return "GL_SAMPLER_2D_ARRAY";
     case GL_TEXTURE_2D: return "GL_TEXTURE_2D";
