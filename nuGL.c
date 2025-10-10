@@ -400,8 +400,13 @@ static size_t nu_define_layout(GLuint *VAO, GLuint *VBO, size_t num_components, 
   // Attrib pointer to each component
   size_t offset = 0;
   for (size_t i = 0; i < num_components; i++) {
-    glVertexAttribPointer(i, component_counts[i], component_types[i], GL_FALSE,
-    stride, (GLvoid *)(intptr_t)offset);
+    if(component_types[i] != GL_INT) {
+      glVertexAttribPointer(i, component_counts[i], component_types[i], GL_FALSE,
+      stride, (GLvoid *)(intptr_t)offset);
+    } else {
+      glVertexAttribIPointer(i, component_counts[i], component_types[i],
+      stride, (GLvoid *)(intptr_t)offset);
+    }
     glEnableVertexAttribArray(i);
     offset += component_sizes[i] * component_counts[i];
   }
