@@ -474,6 +474,8 @@ void nu_mesh_add_bytes(nu_Mesh *mesh, size_t num_bytes, void *src) {
 void nu_destroy_mesh(nu_Mesh **mesh) {
   if(!mesh || !(*mesh)) return;
   if((*mesh)->builder_data) free((*mesh)->builder_data);
+  if((*mesh)->VAO) glDeleteVertexArrays(1, &(*mesh)->VAO);
+  if((*mesh)->VBO) glDeleteBuffers(1, &(*mesh)->VBO);
   free(*mesh);
   *mesh = NULL;
 }
