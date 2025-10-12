@@ -38,6 +38,13 @@ void mouse_button_callback(GLFWwindow* glfw_window, int button, int action, int 
   if (button == GLFW_MOUSE_BUTTON_RIGHT) window->mouse_right = action == GLFW_PRESS; 
 }
 
+void window_focus_callback(GLFWwindow *glfw_window, int focus) {
+  if(!glfw_window) return;
+  nu_Window *window = glfwGetWindowUserPointer(glfw_window);
+  if(!window) return;
+  window->focused = focus == GLFW_TRUE;
+}
+
 nu_Window *nu_create_window(size_t width, size_t height, const char *title, bool fullscreen) {
   if(!title) title = "nu_Window";
   // For now, initialise GLFW and GLEW on each window creation
@@ -80,12 +87,14 @@ nu_Window *nu_create_window(size_t width, size_t height, const char *title, bool
   result->glfw_window = glfw_window;
   result->width = width;
   result->height = height;
+  result->focused = true;
   glfwSetWindowUserPointer(glfw_window, (void*)result);
   // Set window callbacks
   glfwSetFramebufferSizeCallback(result->glfw_window, framebuffer_size_callback);
   glfwSetKeyCallback(result->glfw_window, key_callback);
   glfwSetCursorPosCallback(result->glfw_window, cursor_pos_callback);
   glfwSetMouseButtonCallback(result->glfw_window, mouse_button_callback);
+  glfwSetWindowFocusCallback(result->glfw_window, window_focus_callback);
   return result;
 }
 
@@ -544,7 +553,8 @@ void nu_start_frame(nu_Window *window) {
 void nu_end_frame(nu_Window *window) {
   if(!window || !window->glfw_window) return;
   glfwSwapBuffers(window->glfw_window);
-  glfwPollEvents();
+  if(window->focused) glfwPollEvents();
+  else glfwWaitEvents();
 }
 
 // Texture loading

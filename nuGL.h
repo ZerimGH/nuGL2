@@ -24,6 +24,7 @@ typedef struct {
   double last_mouse_x, last_mouse_y;
   bool mouse_left, mouse_right;
   bool last_mouse_left, last_mouse_right;
+  bool focused;
 } nu_Window;
 
 typedef struct {
