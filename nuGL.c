@@ -544,7 +544,7 @@ void nu_update_input(nu_Window *window) {
 }
 
 void nu_start_frame(nu_Window *window) {
-  if(!window || !window->glfw_window) return;
+  if(!window || !window->glfw_window || !window->focused) return;
   // Clear screen
   glClearColor(0, 0, 0, 1);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -552,9 +552,12 @@ void nu_start_frame(nu_Window *window) {
 
 void nu_end_frame(nu_Window *window) {
   if(!window || !window->glfw_window) return;
-  glfwSwapBuffers(window->glfw_window);
-  if(window->focused) glfwPollEvents();
-  else glfwWaitEvents();
+  if(window->focused) {
+    glfwSwapBuffers(window->glfw_window);
+    glfwPollEvents();
+    return;
+  }
+  glfwWaitEvents();
 }
 
 // Texture loading
