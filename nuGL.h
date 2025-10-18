@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #define KEY_COUNT (GLFW_KEY_LAST + 1)
 
