@@ -69,7 +69,8 @@ nu_Window *nu_create_window(size_t width, size_t height, const char *title, bool
   glfwMakeContextCurrent(glfw_window);
 
   // Initialise glew
-  if(glewInit() != GLEW_OK) {
+  int glew_res = glewInit();
+  if(glew_res != GLEW_OK && glew_res != GLEW_ERROR_NO_GLX_DISPLAY) {
     fprintf(stderr, "(nu_create_window): Error creating window, glewInit() did not return GLEW_OK.\n");
     glfwDestroyWindow(glfw_window);
     glfwTerminate();
